@@ -612,30 +612,30 @@ public class SignatureTest extends SigTest {
 
             ClassDescription currentClass;
 
-            // check that set of classes is transitively closed
-            ClassSet closedSet = new ClassSet(signatureClassesHierarchy, true);
-
-            in.rewind();
-            while ((currentClass = in.nextClass()) != null) {
-                closedSet.addClass(currentClass.getQualifiedName());
-            }
-
-            Set<String> missingClasses = closedSet.getMissingClasses();
-            if (!missingClasses.isEmpty() && !allowMissingSuperclasses()) {
-
-                log.print(i18nSt.getString("SignatureTest.error.required_classes_missing"));
-                int count = 0;
-                for (String missingClass : missingClasses) {
-                    if (count != 0) {
-                        log.print(", ");
-                    }
-                    log.print(missingClass);
-                    ++count;
-                }
-                log.println();
-
-                return error(i18nSt.getString("SignatureTest.error.non_transitively_closed_set"));
-            }
+//            // check that set of classes is transitively closed
+//            ClassSet closedSet = new ClassSet(signatureClassesHierarchy, true);
+//
+//            in.rewind();
+//            while ((currentClass = in.nextClass()) != null) {
+//                closedSet.addClass(currentClass.getQualifiedName());
+//            }
+//
+//            Set<String> missingClasses = closedSet.getMissingClasses();
+//            if (!missingClasses.isEmpty() && !allowMissingSuperclasses()) {
+//
+//                log.print(i18nSt.getString("SignatureTest.error.required_classes_missing"));
+//                int count = 0;
+//                for (String missingClass : missingClasses) {
+//                    if (count != 0) {
+//                        log.print(", ");
+//                    }
+//                    log.print(missingClass);
+//                    ++count;
+//                }
+//                log.println();
+//
+//                return error(i18nSt.getString("SignatureTest.error.non_transitively_closed_set"));
+//            }
 
             in.rewind();
 
@@ -825,7 +825,7 @@ public class SignatureTest extends SigTest {
                             return;
                         }
 
-                        checkSupers(c);  // Issue 42 - avoid dummy "added class" message
+                        // checkSupers(c);  // Issue 42 - avoid dummy "added class" message
                         getErrorManager().addError(MessageType.getAddedMessageType(c.getMemberType()), c.getQualifiedName(), c.getMemberType(), null, c);
                     }
                 }
@@ -921,7 +921,7 @@ public class SignatureTest extends SigTest {
             exclude.check(required, required);
             ClassDescription found = testableHierarchy.load(name);
 
-            checkSupers(found);
+            // checkSupers(found);
 
             if (testableHierarchy.isAccessible(found)) {
 
@@ -1002,31 +1002,31 @@ public class SignatureTest extends SigTest {
         return passed();
     }
 
-    private static void checkSupers(ClassDescription cl) throws SuperClassesNotFoundException {
-        ArrayList<String> fNotFound = new ArrayList<>();
-        SuperClass sc = cl.getSuperClass();
-        ClassHierarchy hi = cl.getClassHierarchy();
-        if (sc != null) {
-            try {
-                hi.load(sc.getQualifiedName());
-            } catch (ClassNotFoundException ex) {
-                fNotFound.add(ex.getMessage());
-            }
-        }
-        SuperInterface[] sif = cl.getInterfaces();
-        if (sif != null) {
-            for (SuperInterface superInterface : sif) {
-                try {
-                    hi.load(superInterface.getQualifiedName());
-                } catch (ClassNotFoundException ex) {
-                    fNotFound.add(ex.getMessage());
-                }
-            }
-        }
-        String[] fProblems = fNotFound.toArray(new String[]{});
-        if (fProblems.length > 0) {
-            throw new SuperClassesNotFoundException(fProblems, cl.getQualifiedName());
-        }
+    private static void checkSupers(ClassDescription cl) /*throws SuperClassesNotFoundException*/ {
+//        ArrayList<String> fNotFound = new ArrayList<>();
+//        SuperClass sc = cl.getSuperClass();
+//        ClassHierarchy hi = cl.getClassHierarchy();
+//        if (sc != null) {
+//            try {
+//                hi.load(sc.getQualifiedName());
+//            } catch (ClassNotFoundException ex) {
+//                fNotFound.add(ex.getMessage());
+//            }
+//        }
+//        SuperInterface[] sif = cl.getInterfaces();
+//        if (sif != null) {
+//            for (SuperInterface superInterface : sif) {
+//                try {
+//                    hi.load(superInterface.getQualifiedName());
+//                } catch (ClassNotFoundException ex) {
+//                    fNotFound.add(ex.getMessage());
+//                }
+//            }
+//        }
+//        String[] fProblems = fNotFound.toArray(new String[]{});
+//        if (fProblems.length > 0) {
+//            throw new SuperClassesNotFoundException(fProblems, cl.getQualifiedName());
+//        }
     }
 
     private static boolean hasClassParameter(ClassDescription cl) {

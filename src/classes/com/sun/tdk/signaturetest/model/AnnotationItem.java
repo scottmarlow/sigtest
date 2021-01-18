@@ -69,17 +69,17 @@ public class AnnotationItem implements Comparable<AnnotationItem> {
                     return 1;
                 }
 
-                diff = members.size() - that.members.size();
-                if (diff == 0) {
-
-                    Iterator<Member> it = members.iterator();
-                    Iterator<Member> that_it = that.members.iterator();
-
-                    while (it.hasNext() && diff == 0) {
-                        Member m = it.next();
-                        diff = m.compareTo(that_it.next());
-                    }
-                }
+//                diff = members.size() - that.members.size();
+//                if (diff == 0) {
+//
+//                    Iterator<Member> it = members.iterator();
+//                    Iterator<Member> that_it = that.members.iterator();
+//
+//                    while (it.hasNext() && diff == 0) {
+//                        Member m = it.next();
+//                        diff = m.compareTo(that_it.next());
+//                    }
+//                }
             }
         }
 
@@ -208,16 +208,17 @@ public class AnnotationItem implements Comparable<AnnotationItem> {
         }
 
         public int compareTo(Member that) {
-            int result = compareNullableStrings(type, that.type);
-
-            if (result == 0) {
-                result = compareNullableStrings(name, that.name);
-            }
-            if (result == 0) {
-                result = compareNullableStrings(value, that.value);
-            }
-
-            return result;
+//            int result = compareNullableStrings(type, that.type);
+//
+//            if (result == 0) {
+//                result = compareNullableStrings(name, that.name);
+//            }
+//            if (result == 0) {
+//                result = compareNullableStrings(value, that.value);
+//            }
+//
+//            return result;
+            return compareNullableStrings(name, that.name);
         }
 
         private static int compareNullableStrings(String s1, String s2) {
