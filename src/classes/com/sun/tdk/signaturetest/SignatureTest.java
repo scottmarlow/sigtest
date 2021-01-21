@@ -42,8 +42,10 @@ import com.sun.tdk.signaturetest.updater.Updater;
 import com.sun.tdk.signaturetest.util.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.*;
 
@@ -1572,7 +1574,18 @@ public class SignatureTest extends SigTest {
      * This class is used to store excluded signatures.
      */
     static class DefaultExcludeList implements Exclude {
-
+        
+        static PrintStream log;
+        static {
+            try {
+                log = new PrintStream("/tmp/sigtestExclude.log");
+                log.println("\nstart of new check");
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                log = System.out;
+            }
+        }
+        
         public DefaultExcludeList() {
         }
 
@@ -1581,6 +1594,18 @@ public class SignatureTest extends SigTest {
          * @see com.sun.tdk.signaturetest.core.Exclude#check(java.lang.String)
          */
         public void check(ClassDescription testedClassName, MemberDescription signature) throws ExcludeException {
+            String detail = "name= " + testedClassName.getName() + 
+                            ", qualified name=" + testedClassName.getQualifiedName() + 
+                            ", toString= " + testedClassName.toString() +
+                            ", signature name=" + signature.getName() +
+                            ", signature class=" + signature.getClass().getName();
+            log.println(detail);
+            if (true || "java.lang.Deprecated".equals(testedClassName.getQualifiedName())) {
+                log.println("Throw ExcludeException to ignore " + testedClassName.getQualifiedName());
+                new Exception("dumpstack").printStackTrace(log);
+                log.flush();
+                throw new ExcludeException("ignoring " + testedClassName.getQualifiedName());
+            }
         }
 
         /* (non-Javadoc)
