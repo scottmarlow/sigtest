@@ -647,15 +647,16 @@ public class JakartaSignatureTest extends SigTest {
 
             ClassDescription currentClass;
 
-            // check that set of classes is transitively closed
-            ClassSet closedSet = new ClassSet(signatureClassesHierarchy, true);
+            // Instead of checking for transitive closure (annotation, super class, outer class for nested class)
+            // will instead only include referenced classes
+            ClassSet specAPISet = new ClassSet(signatureClassesHierarchy, false);
 
             in.rewind();
             while ((currentClass = in.nextClass()) != null) {
-                closedSet.addClass(currentClass.getQualifiedName());
+                specAPISet.addClass(currentClass.getQualifiedName());
             }
 
-            Set<String> missingClasses = closedSet.getMissingClasses();
+            Set<String> missingClasses = specAPISet.getMissingClasses();
             if (!missingClasses.isEmpty() && !allowMissingSuperclasses()) {
 
                 log.print(i18nSt.getString("SignatureTest.error.required_classes_missing"));
@@ -664,7 +665,7 @@ public class JakartaSignatureTest extends SigTest {
                     if (count != 0) {
                         log.print(", ");
                     }
-                    log.print(missingClass);
+                    log.print(missingClass + "xyz-1");
                     ++count;
                 }
                 log.println();
