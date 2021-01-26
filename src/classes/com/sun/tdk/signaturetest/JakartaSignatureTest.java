@@ -24,9 +24,11 @@
  */
 package com.sun.tdk.signaturetest;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -186,7 +188,7 @@ public class JakartaSignatureTest extends SigTest {
     private String outFormat = null;
     private boolean extensibleInterfaces = false;
     private Set<String> orderImportant;
-    private static final I18NResourceBundle i18nSt = I18NResourceBundle.getBundleForClass(JakartaSignatureTest.class);
+    private static final I18NResourceBundle i18nSt = I18NResourceBundle.getBundleForClass(SignatureTest.class);
 
     /**
      * Log-file is not the System.err
@@ -276,6 +278,34 @@ public class JakartaSignatureTest extends SigTest {
         if (logFile) {
             getLog().close();
             System.out.println(i18nSt.getString("SignatureTest.mesg.see_log", logName));
+        }
+    }
+
+    static {
+        try {
+            File logfile = File.createTempFile("JakartaSignatureTest","log");
+            PrintStream log = new PrintStream(logfile);
+            log.println("JakartaSignatureTest started.");
+            log.close();
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void println(String className, String message) {
+        File logfile = new File("/tmp",className + ".log");
+        try {
+            FileWriter fileWriter = new FileWriter(logfile,true);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            PrintWriter printWriter = new PrintWriter(bufferedWriter);
+            printWriter.println(message);
+            printWriter.flush();
+            printWriter.close();
+            bufferedWriter.close();
+            fileWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -542,7 +572,7 @@ public class JakartaSignatureTest extends SigTest {
      * @see #parseParameters(String[])
      */
     private boolean check() {
-
+        println("tck","0.  signature test check entered");
         BaseOptions bo = AppContext.getContext().getBean(BaseOptions.class);
         TestOptions to = AppContext.getContext().getBean(TestOptions.class);
 
@@ -653,15 +683,16 @@ public class JakartaSignatureTest extends SigTest {
 
             in.rewind();
             while ((currentClass = in.nextClass()) != null) {
+                println(currentClass.getQualifiedName(),"1. main loop read " + currentClass.getQualifiedName());
                 specAPISet.addClass(currentClass.getQualifiedName());
             }
 
             Set<String> missingClasses = specAPISet.getMissingClasses();
             if (!missingClasses.isEmpty() && !allowMissingSuperclasses()) {
-
                 log.print(i18nSt.getString("SignatureTest.error.required_classes_missing"));
                 int count = 0;
                 for (String missingClass : missingClasses) {
+                    println(missingClass,"2. first of missing classes set" + missingClass);
                     if (count != 0) {
                         log.print(", ");
                     }
@@ -683,15 +714,20 @@ public class JakartaSignatureTest extends SigTest {
                     getLog().flush();
                 }
                 if (to.isSet(Option.CHECK_EXCESS_CLASSES_ONLY)) {
+                    println(currentClass.getQualifiedName(),"3. CHECK_EXCESS_CLASSES_ONLY " + currentClass.getQualifiedName());
                     trackedClassNames.add(currentClass.getQualifiedName());
                 } else {
+                    println(currentClass.getQualifiedName(),"4. !CHECK_EXCESS_CLASSES_ONLY " + currentClass.getQualifiedName());
                     if (buildMembers && sigfileMCBuilder != null) {
                         try {
                             if (isAPICheckMode()) {
+                                println(currentClass.getQualifiedName(),"5. isAPICheckMode && !CHECK_EXCESS_CLASSES_ONLY " + currentClass.getQualifiedName());
                                 sigfileMCBuilder.setBuildMode(MemberCollectionBuilder.BuildMode.SIGFILE);
                             }
+                            println(currentClass.getQualifiedName(),"6. !CHECK_EXCESS_CLASSES_ONLY " + currentClass.getQualifiedName());
                             sigfileMCBuilder.createMembers(currentClass, addInherited(), false, true);
                         } catch (ClassNotFoundException e) {
+                            println(currentClass.getQualifiedName(),"7. !CHECK_EXCESS_CLASSES_ONLY " + e.getMessage());
                             if (bo.isSet(Option.DEBUG)) {
                                 SwissKnife.reportThrowable(e);
                             }
@@ -699,14 +735,19 @@ public class JakartaSignatureTest extends SigTest {
                     }
 
                     if (useErasurator()) {
+                        String was = currentClass.getQualifiedName(); 
+                        println(currentClass.getQualifiedName(),"8. erasure !CHECK_EXCESS_CLASSES_ONLY " + currentClass.getQualifiedName());
                         currentClass = localErasurator.erasure(currentClass);
+                        println(was,"9. erasure !CHECK_EXCESS_CLASSES_ONLY " + currentClass.getQualifiedName());
                     }
 
                     Transformer t = PluginAPI.BEFORE_TEST.getTransformer();
                     if (t != null) {
                         try {
                             t.transform(currentClass);
+                            println(currentClass.getQualifiedName(),"9. transformed " + currentClass.getQualifiedName());
                         } catch (ClassNotFoundException e) {
+                            println(currentClass.getQualifiedName(),"10. transform fail " + e.getMessage());
                             if (bo.isSet(Option.DEBUG)) {
                                 SwissKnife.reportThrowable(e);
                             }
@@ -714,8 +755,10 @@ public class JakartaSignatureTest extends SigTest {
                     }
 
                     if (currentClass.isModuleOrPackaheInfo() && isTigerFeaturesTracked) {
+                        println(currentClass.getQualifiedName(),"11. transformed " + currentClass.getQualifiedName());
                         verifyMduleOrPackageInfo(currentClass);
                     } else {
+                        println(currentClass.getQualifiedName(),"12. verifyClass " + currentClass.getQualifiedName());
                         verifyClass(currentClass, supportNSC);
                     }
                     if (!isAPICheckMode()) {
@@ -726,24 +769,31 @@ public class JakartaSignatureTest extends SigTest {
             }
 
         } catch (OutOfMemoryError e) {
+            println("tck","OOM " + e.getMessage());
             msg = i18nSt.getString("SignatureTest.error.sigfile.oome");
         } catch (StackOverflowError e) {
+            println("tck","stack overflow " + e.getMessage());
             msg = i18nSt.getString("SignatureTest.error.sigfile.soe");
         } catch (VirtualMachineError e) {
+            println("tck","vm error " + e.getMessage());
             msg = i18nSt.getString("SignatureTest.error.sigfile.vme", e.getMessage());
         } catch (IOException e) {
+            println("tck","IO fail " + e.getMessage());
             if (bo.isSet(Option.DEBUG)) {
                 SwissKnife.reportThrowable(e);
             }
             msg = i18nSt.getString("SignatureTest.error.sigfile.prob") + linesep + e;
         } catch (SecurityException e) {
+            println("tck","security fail " + e.getMessage());
             if (bo.isSet(Option.DEBUG)) {
                 SwissKnife.reportThrowable(e);
             }
             msg = i18nSt.getString("SignatureTest.error.sigfile.sec") + linesep + e;
         } catch (AssertionError ass) {
+            println("tck","assertion fail " + ass.getMessage());
             SwissKnife.reportThrowable(ass);
         } catch (Error e) {
+            println("tck","error fail " + e.getMessage());
             if (bo.isSet(Option.DEBUG)) {
                 SwissKnife.reportThrowable(e);
             }
@@ -758,10 +808,12 @@ public class JakartaSignatureTest extends SigTest {
 
         //  Finished - the sigfile closed.
         if (!isSupersettingEnabled) {
+            println("tck","finished checking with signature files, now is time to see if there were any added classes");
             checkAddedClasses();
         }
 
         if (isTigerFeaturesTracked) {
+            println("tck","finished checking with signature files, now is time to see if there were any added packages");
             checkAddedPackages();
         }
 
@@ -866,10 +918,12 @@ public class JakartaSignatureTest extends SigTest {
                     }
                 }
             } catch (ClassNotFoundException | LinkageError ex) {
+                println(name,"checkAddedClass ClassNotFoundException: " + ex.getMessage());
                 if (bo.isSet(Option.DEBUG)) {
                     SwissKnife.reportThrowable(ex);
                 }
             } catch (ExcludeException e) {
+                println(name,"checkAddedClass ExcludeException:" + e.getMessage());
                 if (isVerbose) {
                     getLog().println(i18nSt.getString("SignatureTest.mesg.verbose.checkAddedClass", new Object[]{name, e.getMessage()}));
                     getLog().flush();
@@ -947,62 +1001,76 @@ public class JakartaSignatureTest extends SigTest {
         // checks that package from tested API
 
         String name = required.getQualifiedName();
+        println(name, "verifyClass:1 " );
+        
         BaseOptions bo = AppContext.getContext().getBean(BaseOptions.class);
 
         if (!isPackageMember(name)) {
+            println(name, "verifyClass:2 ignore due to package name not being tracked" );
             return passed();
         }
 
         try {
             exclude.check(required, required);
+            println(name, "verifyClass:3 load ClassDescription" );
             ClassDescription found = testableHierarchy.load(name);
-
+            println(name, "verifyClass:3 loaded ClassDescription for " + found.getQualifiedName() );
             checkSupers(found);
-
+            println(name, "verifyClass:4 skip loading of super classes/interfaces" );
             if (testableHierarchy.isAccessible(found)) {
 
                 if (isAPICheckMode()) {
+                    println(name, "verifyClass:5 TESTABLE + setSecondClassHierarchy" );
                     testableMCBuilder.setBuildMode(MemberCollectionBuilder.BuildMode.TESTABLE);
                     testableMCBuilder.setSecondClassHierarchy(signatureClassesHierarchy);
                 }
-
+                println(name, "verifyClass:6 addInherited members" );
                 testableMCBuilder.createMembers(found, addInherited(), true, false);
 
                 Filter f = PluginAPI.BEFORE_TEST.getFilter();
                 if (f != null && !f.accept(found)) {
+                    println(name, "verifyClass:7 passed" );
                     return passed();
                 }
 
                 Transformer t = PluginAPI.BEFORE_TEST.getTransformer();
                 if (t != null) {
                     t.transform(found);
+                    println(name, "verifyClass:8 transformed" );
                 }
 
                 if (isThrowsRemoved) {
+                    println(name, "verifyClass:9 remove throws from required + found" );
                     required.removeThrows();
                     found.removeThrows();
                 } else {
+                    println(name, "verifyClass:10 normalize throws required + found" );
                     normalizer.normThrows(found, true, isAPICheckMode());
                     if (isAPICheckMode() && normalizeReq()) {
+                        println(name, "verifyClass:11 normalize throws required + found" );
                         normalizer.normThrows(required, true, true);
                     }
                 }
 
                 if (useErasurator()) {
+                    println(name, "verifyClass:11 normalize throws required + found=" + found.getQualifiedName());
                     found = erasurator.erasure(found);
                 } else if (FORMAT_BACKWARD.equals(outFormat)) {
                     if (!hasClassParameter(required) && hasClassParameter(found)) {
+                        println(name, "verifyClass:12 erasure found=" + found.getQualifiedName());
                         found = erasurator.erasure(found);
                         required = erasurator.erasure(required);
+                        println(name, "verifyClass:12 erasure required =" + required.getQualifiedName());
                     }
                 }
 
                 if (!supportNSC) {
+                    println(name, "verifyClass:13 correct constants");
                     correctConstants(found);
+                    
                 }
-
+                println(name, "verifyClass:14 verifyClass " + required.getQualifiedName() + " " + found.getQualifiedName());
                 verifyClass(required, found);
-
             } else {
                 getErrorManager().addError(MessageType.MISS_CLASSES, name, MemberType.CLASS, null, required);
             }
@@ -1039,30 +1107,31 @@ public class JakartaSignatureTest extends SigTest {
     }
 
     private static void checkSupers(ClassDescription cl) throws SuperClassesNotFoundException {
-        ArrayList<String> fNotFound = new ArrayList<>();
-        SuperClass sc = cl.getSuperClass();
-        ClassHierarchy hi = cl.getClassHierarchy();
-        if (sc != null) {
-            try {
-                hi.load(sc.getQualifiedName());
-            } catch (ClassNotFoundException ex) {
-                fNotFound.add(ex.getMessage());
-            }
-        }
-        SuperInterface[] sif = cl.getInterfaces();
-        if (sif != null) {
-            for (SuperInterface superInterface : sif) {
-                try {
-                    hi.load(superInterface.getQualifiedName());
-                } catch (ClassNotFoundException ex) {
-                    fNotFound.add(ex.getMessage());
-                }
-            }
-        }
-        String[] fProblems = fNotFound.toArray(new String[]{});
-        if (fProblems.length > 0) {
-            throw new SuperClassesNotFoundException(fProblems, cl.getQualifiedName());
-        }
+
+//        ArrayList<String> fNotFound = new ArrayList<>();
+//        SuperClass sc = cl.getSuperClass();
+//        ClassHierarchy hi = cl.getClassHierarchy();
+//        if (sc != null) {
+//            try {
+//                hi.load(sc.getQualifiedName());
+//            } catch (ClassNotFoundException ex) {
+//                fNotFound.add(ex.getMessage());
+//            }
+//        }
+//        SuperInterface[] sif = cl.getInterfaces();
+//        if (sif != null) {
+//            for (SuperInterface superInterface : sif) {
+//                try {
+//                    hi.load(superInterface.getQualifiedName());
+//                } catch (ClassNotFoundException ex) {
+//                    fNotFound.add(ex.getMessage());
+//                }
+//            }
+//        }
+//        String[] fProblems = fNotFound.toArray(new String[]{});
+//        if (fProblems.length > 0) {
+//            throw new SuperClassesNotFoundException(fProblems, cl.getQualifiedName());
+//        }
     }
 
     private static boolean hasClassParameter(ClassDescription cl) {
@@ -1128,8 +1197,9 @@ public class JakartaSignatureTest extends SigTest {
 
         // adds class name to the table of the tracked classes.
         trackedClassNames.add(found.getQualifiedName());
-
+        println(required.getQualifiedName(), "verifyClass(CD, CD):1 tracking found class " + found.getQualifiedName());
         if (getErrorManager() instanceof SortedErrorFormatter) {
+            println(required.getQualifiedName(), "verifyClass(CD, CD):2 tracking found class " + found.getQualifiedName());
             ((SortedErrorFormatter) getErrorManager()).tested(found);
         }
 
