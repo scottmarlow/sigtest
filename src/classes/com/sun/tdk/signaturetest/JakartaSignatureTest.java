@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -292,6 +293,20 @@ public class JakartaSignatureTest extends SigTest {
             e.printStackTrace();
         }
     }
+    
+    private void println(String className, String message, Throwable throwable) {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        throwable.printStackTrace(printWriter);
+        println(className, stringWriter.toString());
+        printWriter.close();
+        try {
+            stringWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     private void println(String className, String message) {
         File logfile = new File("/tmp",className + ".log");
         try {
@@ -1016,7 +1031,7 @@ public class JakartaSignatureTest extends SigTest {
             ClassDescription found = testableHierarchy.load(name);
             println(name, "verifyClass:3 loaded ClassDescription for " + found.getQualifiedName() );
             checkSupers(found);
-            println(name, "verifyClass:4 skip loading of super classes/interfaces" );
+            println(name, "verifyClass:4 skip loading (checkSupers) of super classes/interfaces" );
             if (testableHierarchy.isAccessible(found)) {
 
                 if (isAPICheckMode()) {
@@ -1025,8 +1040,10 @@ public class JakartaSignatureTest extends SigTest {
                     testableMCBuilder.setSecondClassHierarchy(signatureClassesHierarchy);
                 }
                 println(name, "verifyClass:6 addInherited members" );
-                testableMCBuilder.createMembers(found, addInherited(), true, false);
 
+                testableMCBuilder.createMembers(found, addInherited(), true, false);
+                println(name, "verifyClass:6.1 addInherited members returned" );
+                
                 Filter f = PluginAPI.BEFORE_TEST.getFilter();
                 if (f != null && !f.accept(found)) {
                     println(name, "verifyClass:7 passed" );
@@ -1075,19 +1092,24 @@ public class JakartaSignatureTest extends SigTest {
                 getErrorManager().addError(MessageType.MISS_CLASSES, name, MemberType.CLASS, null, required);
             }
         } catch (SuperClassesNotFoundException ex) {
+            println(name, "verifyClass:SuperClassesNotFoundException " + ex.getMessage() );
             if (bo.isSet(Option.DEBUG)) {
                 SwissKnife.reportThrowable(ex);
             }
             String[] names = ex.getMissedClasses();
             for (String name1 : names) {
+                println(name, "verifyClass:SuperClassesNotFoundException " + name1 );
                 getErrorManager().addError(MessageType.MISS_SUPERCLASSES, name1, MemberType.CLASS, ex.getClassName(), required);
             }
         } catch (ClassNotFoundException ex) {
+            println(name, "verifyClass:ClassNotFoundException ", ex );
+            
             if (bo.isSet(Option.DEBUG)) {
                 SwissKnife.reportThrowable(ex);
             }
             getErrorManager().addError(MessageType.MISS_CLASSES, name, MemberType.CLASS, null, required);
         } catch (LinkageError er) {
+            println(name, "verifyClass:LinkageError " + er.getMessage() );
             if (bo.isSet(Option.DEBUG)) {
                 SwissKnife.reportThrowable(er);
             }
@@ -1097,6 +1119,7 @@ public class JakartaSignatureTest extends SigTest {
 
             trackedClassNames.add(name);
         } catch (ExcludeException e) {
+            println(name, "verifyClass:ExcludeException " + e.getMessage() );
             trackedClassNames.add(name);
             if (isVerbose) {
                 getLog().println(i18nSt.getString("SignatureTest.mesg.verbose.verifyClass", new Object[]{name, e.getMessage()}));
