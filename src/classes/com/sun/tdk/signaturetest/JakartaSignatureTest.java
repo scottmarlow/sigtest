@@ -1131,30 +1131,36 @@ public class JakartaSignatureTest extends SigTest {
 
     private static void checkSupers(ClassDescription cl) throws SuperClassesNotFoundException {
 
-//        ArrayList<String> fNotFound = new ArrayList<>();
-//        SuperClass sc = cl.getSuperClass();
-//        ClassHierarchy hi = cl.getClassHierarchy();
-//        if (sc != null) {
-//            try {
-//                hi.load(sc.getQualifiedName());
-//            } catch (ClassNotFoundException ex) {
-//                fNotFound.add(ex.getMessage());
-//            }
-//        }
-//        SuperInterface[] sif = cl.getInterfaces();
-//        if (sif != null) {
-//            for (SuperInterface superInterface : sif) {
-//                try {
-//                    hi.load(superInterface.getQualifiedName());
-//                } catch (ClassNotFoundException ex) {
-//                    fNotFound.add(ex.getMessage());
-//                }
-//            }
-//        }
-//        String[] fProblems = fNotFound.toArray(new String[]{});
-//        if (fProblems.length > 0) {
-//            throw new SuperClassesNotFoundException(fProblems, cl.getQualifiedName());
-//        }
+        ArrayList<String> fNotFound = new ArrayList<>();
+        SuperClass sc = cl.getSuperClass();
+        ClassHierarchy hi = cl.getClassHierarchy();
+        if (sc != null) {
+            try {
+                if (!sc.getQualifiedName().startsWith("java") &&  // DO NOT MERGE this hack
+                    !sc.getQualifiedName().startsWith("javax")) { // DO NOT MERGE this hack
+                    hi.load(sc.getQualifiedName());
+                }
+            } catch (ClassNotFoundException ex) {
+                fNotFound.add(ex.getMessage());
+            }
+        }
+        SuperInterface[] sif = cl.getInterfaces();
+        if (sif != null) {
+            for (SuperInterface superInterface : sif) {
+                try {
+                    if (!superInterface.getQualifiedName().startsWith("java") &&  // DO NOT MERGE this hack
+                        !superInterface.getQualifiedName().startsWith("javax")) { // DO NOT MERGE this hack
+                        hi.load(superInterface.getQualifiedName());
+                    }
+                } catch (ClassNotFoundException ex) {
+                    fNotFound.add(ex.getMessage());
+                }
+            }
+        }
+        String[] fProblems = fNotFound.toArray(new String[]{});
+        if (fProblems.length > 0) {
+            throw new SuperClassesNotFoundException(fProblems, cl.getQualifiedName());
+        }
     }
 
     private static boolean hasClassParameter(ClassDescription cl) {
