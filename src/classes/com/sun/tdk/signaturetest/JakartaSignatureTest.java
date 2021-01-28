@@ -860,7 +860,7 @@ public class JakartaSignatureTest extends SigTest {
     // "The following classes are required, but missing in the signature files"
     // error. Needs for specific extensions such as compiler TCK
     protected boolean allowMissingSuperclasses() {
-        return true;
+        return false;
     }
 
     // Can be overriden in an extension, allows to disable
@@ -872,7 +872,7 @@ public class JakartaSignatureTest extends SigTest {
     }
 
     protected boolean isAPICheckMode() {
-        return true;
+        return false;
     }
 
     // for APICheck
